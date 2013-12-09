@@ -46,6 +46,10 @@ void renderPixel(int x, int y, float r, float g, float b);
 //Given points (x1,y1) and (x2,y2), a line is drawn with the colors r,g,b
 void dda(int x1, int y1, int x2, int y2, float r = 1.0, float g = 1.0, float b = 1.0);
 
+//Draw the inputted mesh
+//Currently, it's set to only draw the front (i.e, the x,y axis only)
+void draw_mesh();
+
 /////////////////////////////////////////////////////
 /////////////////////////////////////////////////////
 
@@ -211,7 +215,7 @@ void GLinit(int argc, char** argv)
 
 void GLrender()
 {
-	dda(200,200, 400, 400);
+	draw_mesh();
 	glutSwapBuffers();
 }
 
@@ -258,6 +262,24 @@ void dda(int x1, int y1, int x2, int y2, float r, float g, float b)
 			renderPixel(j, i);
 			if(slope != 0.0) j+= 1/slope;
 		}
+	}
+}
+
+void draw_mesh(){
+	for( int i = 0; i < faces.size(); ++i ){
+		HalfEdge* starting_edge = faces[i]->edge;
+		HalfEdge* base = starting_edge;
+		do{
+			float x1,y1,x2,y2;
+			Vector3 pt0 = starting_edge->vert->coords;
+			Vector3 pt1 = starting_edge->next->vert->coords;
+			x1 = pt0.x*8;
+			y1 = pt0.y*8;
+			x2 = pt1.x*8;
+			y2 = pt1.y*8;
+			dda(x1,y1,x2,y2);
+			starting_edge = starting_edge->next;
+		}while( starting_edge != base );
 	}
 }
 /////////////////////////////////////////////////////
