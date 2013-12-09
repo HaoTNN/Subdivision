@@ -1,10 +1,16 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <cmath>
+#include <GL/glut.h>
+#include <unistd.h>
 #include "vector3.h"
 #include "halfedge.h"
 
 using namespace std;
+
+const int WINDOW_WIDTH = 800;
+const int WINDOW_HEIGHT = 800;
 
 /////////////////////////////////////////////////////
 //	TEMP. GLOBALS
@@ -21,9 +27,25 @@ map< pair<unsigned int, unsigned int>, HalfEdge* > edges;
 /////////////////////////////////////////////////////
 void readMeshFile(const string &fileName, map< pair<unsigned int, unsigned int>, HalfEdge*> &edges,
 					map< unsigned int, Vertex* > &vertices, vector<Face*> &faces );
+
+//All vertex points are printed given the map vertices
 void print( const map<unsigned int, Vertex*> &vertices );
+
+//All half edges are printed in the form of their vertex ids given the map edges
 void print( const map< pair<unsigned int, unsigned int>, HalfEdge*> &edges);
+
+//Testing function to check loops of a face given a starting halfedge
 int test_cycle();
+
+void GLinit(int argc, char** argv);
+void GLrender();
+
+//Given point (x,y), a pixel is drawn with colors r,g,b
+void renderPixel(int x, int y, float r, float g, float b);
+
+//Given points (x1,y1) and (x2,y2), a line is drawn with the colors r,g,b
+void dda(int x1, int y1, int x2, int y2, float r = 1.0, float g = 1.0, float b = 1.0);
+
 /////////////////////////////////////////////////////
 /////////////////////////////////////////////////////
 
@@ -37,8 +59,10 @@ int main( int argc, char* argv[] ){
 	print(vertices);
 	print(edges);
 
-	cout << endl;
-	test_cycle();
+	GLinit(argc, argv);
+	glutDisplayFunc(GLrender);
+	glutMainLoop();
+
 	return 0;
 }
 
@@ -163,6 +187,76 @@ void readMeshFile(const string &fileName, map< pair<unsigned int, unsigned int>,
 				edges[ pair<unsigned int, unsigned int>(z,x) ]->pair = edges[ pair<unsigned int, unsigned int>(x,z) ];
 				edges[ pair<unsigned int, unsigned int>(x,z) ]->pair = edges[ pair<unsigned int, unsigned int>(z,x) ];
 			}
+		}
+	}
+}
+
+void GLinit(int argc, char** argv)
+{
+    glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE );
+	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+	// ...
+	// Complete this function
+	// ...
+	glutCreateWindow("CS 130 - Hao Nguyen");
+
+	// The default view coordinates is (-1.0, -1.0) bottom left & (1.0, 1.0) top right.
+	// For the purposes of this lab, this is set to the number of pixels
+	// in each dimension.
+	glMatrixMode(GL_PROJECTION_MATRIX);
+	glOrtho(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT, -1, 1);
+}
+
+void GLrender()
+{
+	dda(200,200, 400, 400);
+	glutSwapBuffers();
+}
+
+void renderPixel(int x, int y, float r = 1.0, float g = 1.0, float b = 1.0)
+{
+	glBegin(GL_POINTS);
+	glColor3f(r,g,b);
+	glVertex2i(x,y);
+	glEnd();
+}
+
+void dda(int x1, int y1, int x2, int y2, float r, float g, float b)
+{
+	if(x1 > x2){
+		int tmp = x1;
+		x1 = x2;
+		x2 = tmp;
+		tmp = y1;
+		y1 = y2;
+		y2 = tmp;
+	}
+	float slope = (float)(y2 - y1)/(float)(x2 - x1);
+
+	if( -1.0 < slope && slope < 1.0 )
+	{	
+		float j = y1;
+		for( float i = x1; i < x2; ++i ){
+			renderPixel(i, j);
+			j+=slope;
+		}
+	}
+	else if( slope <= -1.0 ){
+		float j = x1;
+		for( float i = y1; i >= y2; --i ){
+			renderPixel(j, i);
+			j-=1/slope;
+		}
+	}
+	else
+	{
+		if( x1 == x2 ) slope = 0.0;
+		float j = x1;
+		for( float i = y1; i <= y2; i++ ){
+			renderPixel(j, i);
+			if(slope != 0.0) j+= 1/slope;
 		}
 	}
 }
